@@ -3,6 +3,10 @@ use criterion::{black_box, BatchSize};
 use thread_local::ThreadLocal;
 
 fn main() {
+    let context = dyntls_host::get();
+    unsafe {
+        context.initialize();
+    }
     let mut c = criterion::Criterion::default().configure_from_args();
 
     c.bench_function("get", |b| {

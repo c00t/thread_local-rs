@@ -18,9 +18,13 @@ nightly = []
 [dependencies]
 # this is required to gate `nightly` related code paths
 cfg-if = "1.0.0"
+# add dyntls support
+dyntls = {path = "../../../app/dyntls"}
 
 [dev-dependencies]
 criterion = "0.5.1"
+# add dyntls support
+dyntls-host = {path = "../../../app/dyntls_host"}
 
 [[bench]]
 name = "thread_local"

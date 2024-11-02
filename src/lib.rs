@@ -29,6 +29,8 @@
 //! Basic usage of `ThreadLocal`:
 //!
 //! ```rust
+//! # let context = dyntls_host::get();
+//! # unsafe { context.initialize(); }
 //! use thread_local::ThreadLocal;
 //! let tls: ThreadLocal<u32> = ThreadLocal::new();
 //! assert_eq!(tls.get(), None);
@@ -39,6 +41,8 @@
 //! Combining thread-local values into a single result:
 //!
 //! ```rust
+//! # let context = dyntls_host::get();
+//! # unsafe { context.initialize(); }
 //! use thread_local::ThreadLocal;
 //! use std::sync::Arc;
 //! use std::cell::Cell;
@@ -50,6 +54,9 @@
 //! for _ in 0..5 {
 //!     let tls2 = tls.clone();
 //!     thread::spawn(move || {
+//! #       unsafe {
+//! #           context.initialize();
+//! #       }
 //!         // Increment a counter to count some event...
 //!         let cell = tls2.get_or(|| Cell::new(0));
 //!         cell.set(cell.get() + 1);
@@ -538,6 +545,9 @@ mod tests {
 
     #[test]
     fn same_thread() {
+        unsafe {
+            dyntls_host::get().initialize();
+        }
         let create = make_create();
         let mut tls = ThreadLocal::new();
         assert_eq!(None, tls.get());
@@ -555,6 +565,9 @@ mod tests {
 
     #[test]
     fn different_thread() {
+        unsafe {
+            dyntls_host::get().initialize();
+        }
         let create = make_create();
         let tls = Arc::new(ThreadLocal::new());
         assert_eq!(None, tls.get());
@@ -577,14 +590,24 @@ mod tests {
 
     #[test]
     fn iter() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let tls = Arc::new(ThreadLocal::new());
         tls.get_or(|| Box::new(1));
 
         let tls2 = tls.clone();
         thread::spawn(move || {
+            unsafe {
+                context.initialize();
+            }
             tls2.get_or(|| Box::new(2));
             let tls3 = tls2.clone();
             thread::spawn(move || {
+                unsafe {
+                    context.initialize();
+                }
                 tls3.get_or(|| Box::new(3));
             })
             .join()
@@ -611,11 +634,18 @@ mod tests {
 
     #[test]
     fn miri_iter_soundness_check() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let tls = Arc::new(ThreadLocal::new());
         let _local = tls.get_or(|| Box::new(1));
 
         let tls2 = tls.clone();
         let join_1 = thread::spawn(move || {
+            unsafe {
+                context.initialize();
+            }
             let _tls = tls2.get_or(|| Box::new(2));
             let iter = tls2.iter();
             for item in iter {
@@ -633,6 +663,10 @@ mod tests {
 
     #[test]
     fn test_drop() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         let local = ThreadLocal::new();
         struct Dropped(Arc<AtomicUsize>);
         impl Drop for Dropped {
@@ -650,6 +684,10 @@ mod tests {
 
     #[test]
     fn test_earlyreturn_buckets() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         struct Dropped(Arc<AtomicUsize>);
         impl Drop for Dropped {
             fn drop(&mut self) {
@@ -676,6 +714,10 @@ mod tests {
 
     #[test]
     fn is_sync() {
+        let context = dyntls_host::get();
+        unsafe {
+            context.initialize();
+        }
         fn foo<T: Sync>() {}
         foo::<ThreadLocal<String>>();
         foo::<ThreadLocal<RefCell<String>>>();
